@@ -419,6 +419,16 @@ static void __init parse_setup_data(void)
 			memzero_explicit(&data->len, sizeof(data->len));
 			early_memunmap(data, data_len);
 			break;
+#if 1
+		case SETUP_INTEL_CE_BOARD_TYPE:
+		case SETUP_INTEL_CE_NIC_PHY_MODE:
+		case SETUP_INTEL_CE_BOARD_REV:
+		case SETUP_INTEL_CE_FLASH_LAYOUT_TABLE:
+			data = early_memremap(pa_data, data_len);
+			x86_ce2600_set_setup_data(data_type, data->data, data->len);
+			early_memunmap(data, data_len);
+			break;
+#endif
 		default:
 			break;
 		}

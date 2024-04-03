@@ -683,6 +683,12 @@ static int intel_start_signal_voltage_switch(struct mmc_host *mmc,
 	return 0;
 }
 
+static void sdhci_intel_ce_emmc_reset(struct sdhci_host *host, u8 mask)
+{
+	/* TODO: add HWMUTEX stuff here */
+	sdhci_reset(host, mask);
+}
+
 static const struct sdhci_ops sdhci_intel_byt_ops = {
 	.set_clock		= sdhci_set_clock,
 	.set_power		= sdhci_intel_set_power,
@@ -702,6 +708,15 @@ static const struct sdhci_ops sdhci_intel_glk_ops = {
 	.set_uhs_signaling	= sdhci_intel_set_uhs_signaling,
 	.hw_reset		= sdhci_pci_hw_reset,
 	.irq			= sdhci_cqhci_irq,
+};
+
+static const struct sdhci_ops sdhci_intel_ce_emmc_ops = {
+	.set_clock	= sdhci_set_clock,
+	.enable_dma	= sdhci_pci_enable_dma,
+	.set_bus_width	= sdhci_set_bus_width,
+	.reset		= sdhci_intel_ce_emmc_reset,
+	.set_uhs_signaling = sdhci_set_uhs_signaling,
+	.hw_reset		= sdhci_pci_hw_reset,
 };
 
 static void byt_read_dsm(struct sdhci_pci_slot *slot)
@@ -1132,6 +1147,14 @@ static int byt_sd_probe_slot(struct sdhci_pci_slot *slot)
 	return 0;
 }
 
+static int sdhci_intel_ce_emmc_add_host(struct sdhci_pci_slot *slot)
+{
+	/* taken AS-IS from Intel's source :) */
+	slot->host->caps |= SDHCI_CAN_VDD_330;
+	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_NONREMOVABLE;
+	return sdhci_add_host(slot->host);
+}
+
 #ifdef CONFIG_PM_SLEEP
 
 static int byt_resume(struct sdhci_pci_chip *chip)
@@ -1194,6 +1217,13 @@ static const struct sdhci_pci_fixes sdhci_intel_glk_emmc = {
 				  SDHCI_QUIRK2_STOP_WITH_TC,
 	.ops			= &sdhci_intel_glk_ops,
 	.priv_size		= sizeof(struct intel_host),
+};
+
+static const struct sdhci_pci_fixes sdhci_intel_ce_emmc = {
+	.allow_runtime_pm 	= false,
+	.add_host		= sdhci_intel_ce_emmc_add_host,
+	.quirks			= SDHCI_QUIRK_BROKEN_CARD_DETECTION,
+	.ops			= &sdhci_intel_ce_emmc_ops,
 };
 
 static const struct sdhci_pci_fixes sdhci_ni_byt_sdio = {
@@ -1888,6 +1918,7 @@ static const struct pci_device_id pci_ids[] = {
 	SDHCI_PCI_DEVICE(INTEL, LKF_EMMC,  intel_glk_emmc),
 	SDHCI_PCI_DEVICE(INTEL, LKF_SD,    intel_byt_sd),
 	SDHCI_PCI_DEVICE(INTEL, ADL_EMMC,  intel_glk_emmc),
+	SDHCI_PCI_DEVICE(INTEL, CE_EMMC,   intel_ce_emmc),
 	SDHCI_PCI_DEVICE(O2, 8120,     o2),
 	SDHCI_PCI_DEVICE(O2, 8220,     o2),
 	SDHCI_PCI_DEVICE(O2, 8221,     o2),

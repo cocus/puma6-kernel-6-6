@@ -178,12 +178,15 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 {
 	u32 l = 0, sz = 0, mask;
 	u64 l64, sz64, mask64;
+#if 1
 	u16 orig_cmd;
+#endif
 	struct pci_bus_region region, inverted_region;
 
 	mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
 
 	/* No printks while decoding is disabled! */
+#if 1
 	if (!dev->mmio_always_on) {
 		pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
 		if (orig_cmd & PCI_COMMAND_DECODE_ENABLE) {
@@ -191,7 +194,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 				orig_cmd & ~PCI_COMMAND_DECODE_ENABLE);
 		}
 	}
-
+#endif
 	res->name = pci_name(dev);
 
 	pci_read_config_dword(dev, pos, &l);
@@ -245,10 +248,10 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 		sz64 |= ((u64)sz << 32);
 		mask64 |= ((u64)~0 << 32);
 	}
-
+#if 1
 	if (!dev->mmio_always_on && (orig_cmd & PCI_COMMAND_DECODE_ENABLE))
 		pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
-
+#endif
 	if (!sz64)
 		goto fail;
 

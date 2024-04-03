@@ -54,6 +54,18 @@ static void ce4100_reset(struct pci_dev *dev)
 	}
 }
 
+static void ce2600_reset(struct pci_dev *dev)
+{
+	int i;
+	/*
+	 * Intel Media SOC Gen3 uses this specific method to reboot.
+	 */
+	for (i = 0; i < 10; i++) {
+		outb(0x8, 0xcf9);
+		udelay(50);
+	}
+}
+
 struct device_fixup {
 	unsigned int vendor;
 	unsigned int device;
@@ -63,14 +75,14 @@ struct device_fixup {
 /*
  * PCI ids solely used for fixups_table go here
  */
-#define PCI_DEVICE_ID_INTEL_CE4100	0x0708
 
 static const struct device_fixup fixups_table[] = {
 { PCI_VENDOR_ID_CYRIX, PCI_DEVICE_ID_CYRIX_5530_LEGACY, cs5530a_warm_reset },
 { PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA, cs5536_warm_reset },
 { PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_SC1100_BRIDGE, cs5530a_warm_reset },
 { PCI_VENDOR_ID_RDC, PCI_DEVICE_ID_RDC_R6030, rdc321x_reset },
-{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CE4100, ce4100_reset },
+{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CE4100_SOC, ce4100_reset },
+{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CE2600_SOC, ce2600_reset },
 };
 
 /*

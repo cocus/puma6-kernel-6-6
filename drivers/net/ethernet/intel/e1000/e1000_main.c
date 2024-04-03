@@ -1029,7 +1029,6 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		hw->ce4100_gbe_mdio_base_virt =
 					ioremap(pci_resource_start(pdev, BAR_1),
 						pci_resource_len(pdev, BAR_1));
-
 		if (!hw->ce4100_gbe_mdio_base_virt)
 			goto err_mdio_ioremap;
 	}
@@ -1184,8 +1183,12 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (hw->mac_type == e1000_ce4100) {
 		for (i = 0; i < 32; i++) {
 			hw->phy_addr = i;
+			/* try to read the ID on non M88E6xxx phys */
 			e1000_read_phy_reg(hw, PHY_ID2, &tmp);
-
+			if (tmp != 0 && tmp != 0xFF)
+				break;
+			/* try with M88E6xxx phys */
+			e1000_m88e6_read_phy_reg(hw, 0x10, 0x03, &tmp);
 			if (tmp != 0 && tmp != 0xFF)
 				break;
 		}

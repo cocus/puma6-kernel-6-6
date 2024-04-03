@@ -189,6 +189,7 @@ typedef enum {
 	e1000_phy_igp,
 	e1000_phy_8211,
 	e1000_phy_8201,
+	e1000_phy_m88e6,
 	e1000_phy_undefined = 0xFF
 } e1000_phy_type;
 
@@ -278,6 +279,7 @@ s32 e1000_get_speed_and_duplex(struct e1000_hw *hw, u16 * speed, u16 * duplex);
 s32 e1000_force_mac_fc(struct e1000_hw *hw);
 
 /* PHY */
+s32 e1000_m88e6_read_phy_reg(struct e1000_hw *hw, s32 addr, s32 reg, u16 *phy_data);
 s32 e1000_read_phy_reg(struct e1000_hw *hw, u32 reg_addr, u16 * phy_data);
 s32 e1000_write_phy_reg(struct e1000_hw *hw, u32 reg_addr, u16 data);
 s32 e1000_phy_hw_reset(struct e1000_hw *hw);
@@ -2904,6 +2906,7 @@ struct e1000_host_command_info {
 #define RTL_PHY_CTRL_FD    0x0100 /* Full duplex.0=half; 1=full */
 #define RTL_PHY_CTRL_SPD_100    0x200000 /* Force 100Mb */
 
+#define M88E6172_E_PHY_ID    0x1720
 /* Bits...
  * 15-5: page
  * 4-0: register offset

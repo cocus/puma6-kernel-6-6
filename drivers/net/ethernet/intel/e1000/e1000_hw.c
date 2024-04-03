@@ -7,6 +7,10 @@
 
 #include "e1000.h"
 
+#define M88E6XXX_REG_PORT(p)		(0x10 + (p))
+#define M88E6XXX_REG_GLOBAL		0x1b
+#define M88E6XXX_REG_GLOBAL2		0x1c
+
 static s32 e1000_check_downshift(struct e1000_hw *hw);
 static s32 e1000_check_polarity(struct e1000_hw *hw,
 				e1000_rev_polarity *polarity);
@@ -100,6 +104,9 @@ static s32 e1000_set_phy_type(struct e1000_hw *hw)
 	case M88E1111_I_PHY_ID:
 	case M88E1118_E_PHY_ID:
 		hw->phy_type = e1000_phy_m88;
+		break;
+	case M88E6172_E_PHY_ID:
+		hw->phy_type = e1000_phy_m88e6;
 		break;
 	case IGP01E1000_I_PHY_ID:
 		if (hw->mac_type == e1000_82541 ||
@@ -1431,6 +1438,9 @@ static s32 e1000_setup_copper_link(struct e1000_hw *hw)
 		ret_val = e1000_copper_link_mgp_setup(hw);
 		if (ret_val)
 			return ret_val;
+	} else if (hw->phy_type == e1000_phy_m88e6) {
+		e_dbg("TODO: add proper setup of m88e6 phy (instead of relying on CEFDK)");
+		return E1000_SUCCESS;
 	} else {
 		ret_val = gbe_dhg_phy_setup(hw);
 		if (ret_val) {
@@ -1938,6 +1948,10 @@ static s32 e1000_config_mac_to_phy(struct e1000_hw *hw)
 
 		e1000_config_collision_dist(hw);
 		break;
+	case e1000_phy_m88e6:
+		e_dbg("TODO: implement M88E6xxx change of upstream port parameters!\n");
+		e1000_config_collision_dist(hw);
+		break;
 	default:
 		/* Set up duplex in the Device Control and Transmit Control
 		 * registers depending on negotiated values.
@@ -2391,6 +2405,12 @@ s32 e1000_check_for_link(struct e1000_hw *hw)
 		}
 	}
 
+	if ((hw->phy_type == e1000_phy_m88e6) && hw->get_link_status) {
+		hw->get_link_status = false;
+		e_dbg("TODO: implement M88E6xxx check of status of upstream port as E1000 link status!\n");
+		return E1000_SUCCESS;
+	}
+
 	/* If we have a copper PHY then we only want to go out to the PHY
 	 * registers to see if Auto-Neg has completed and/or if our link
 	 * status has changed.  The get_link_status flag will be set if we
@@ -2770,6 +2790,30 @@ static u16 e1000_shift_in_mdi_bits(struct e1000_hw *hw)
 	e1000_lower_mdi_clk(hw, &ctrl);
 
 	return data;
+}
+
+/**
+ * e1000_m88e6_read_phy_reg - read a M88E6xxx phy register
+ * @hw: Struct containing variables accessed by shared code
+ * @reg_addr: address of the PHY register to read
+ * @phy_data: pointer to the value on the PHY register
+ *
+ * Reads the value from a PHY register, if the value is on a specific non zero
+ * page, sets the page first.
+ */
+s32 e1000_m88e6_read_phy_reg(struct e1000_hw *hw, s32 addr, s32 reg, u16 *phy_data)
+{
+	s32 ret = -1;
+	printk(" ==== e1000_m88e6_read_phy_reg cmp %x (addr is %x, reg is %x)\n", (0x9800 | (addr << 5) | reg), addr, reg);
+	/* Transmit the read command. */
+	ret = e1000_write_phy_reg(hw, 0, 0x9800 | (addr << 5) | reg);
+	if (ret < 0) {
+		return ret;
+	}
+	/* Read the data. */
+	ret = e1000_read_phy_reg(hw, 1, phy_data);
+	printk(" ====  === phy_data = %x, ret %d\n", *phy_data, ret);
+	return ret;
 }
 
 /**
@@ -3175,6 +3219,18 @@ static s32 e1000_detect_gig_phy(struct e1000_hw *hw)
 		    (hw->phy_id == RTL8201N_PHY_ID) ||
 		    (hw->phy_id == M88E1118_E_PHY_ID))
 			match = true;
+		else {
+			/* try to address a M88E6xxx instead */
+			ret_val = e1000_m88e6_read_phy_reg(hw, M88E6XXX_REG_PORT(0), 0x03, &phy_id_low);
+			if (ret_val < 0) {
+				break;
+			}
+			hw->phy_id = (u32)(phy_id_low & PHY_REVISION_MASK);
+			hw->phy_revision = (u32)phy_id_low & ~PHY_REVISION_MASK;
+
+			if (hw->phy_id == M88E6172_E_PHY_ID)
+				match = true;
+		}
 		break;
 	case e1000_82541:
 	case e1000_82541_rev_2:
@@ -3863,6 +3919,7 @@ static s32 e1000_do_read_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
 	u32 i = 0;
 
 	if (hw->mac_type == e1000_ce4100) {
+		/* TODO: add a boundary check */
 		GBE_CONFIG_FLASH_READ(GBE_CONFIG_BASE_VIRT, offset, words,
 				      data);
 		return E1000_SUCCESS;

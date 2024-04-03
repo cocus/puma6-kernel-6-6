@@ -66,6 +66,12 @@ extern void x86_ce4100_early_setup(void);
 static inline void x86_ce4100_early_setup(void) { }
 #endif
 
+#if 1
+extern void x86_ce2600_set_setup_data(u32 type, const void *buf, size_t len);
+#else
+extern void x86_ce2600_set_setup_data(u32 type, const void *buf, size_t len) { }
+#endif
+
 #ifndef _SETUP
 
 #include <asm/espfix.h>

@@ -146,8 +146,17 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
 			hcd->has_tt = 1;
 		break;
 	case PCI_VENDOR_ID_TDI:
-		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI)
+		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
 			hcd->has_tt = 1;
+			if (pdev->revision >= 0x6) {
+				/* Intel CExxx USB controller has some extensions similar with Moorestown
+				 * such as host mode control, device speed report and power management.
+				 * So set ehci->has_hostpc to utilize the support code for Moorestown.
+				 */
+				ehci->has_hostpc = 1;
+				ehci->has_tdi_phy_lpm = 0;
+			}
+		}
 		break;
 	case PCI_VENDOR_ID_AMD:
 		/* AMD PLL quirk */
