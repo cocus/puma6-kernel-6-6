@@ -117,7 +117,7 @@ enum ce2600_board_type {
 	CE_BOARD_TYPE_MAX = CE_BOARD_TYPE_CR_BOARD_TYPE
 };
 
-static const char* _ce2600_board_types_strings[CE_BOARD_TYPE_MAX] = {
+static const char* _ce2600_board_types_strings[CE_BOARD_TYPE_MAX+1] = {
 	"Harbor Park",
 	"Harbor Park - MG",
 	"Falcon Mine",
