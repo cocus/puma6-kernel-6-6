@@ -53,7 +53,17 @@ static void parse_earlyprintk(void)
 	if (cmdline_find_option("earlyprintk", arg, sizeof(arg)) > 0) {
 		char *e;
 
-		if (!strncmp(arg, "serial", 6)) {
+		if (!strncmp(arg, "intelce", 7)) {
+			/*
+			 * Process the earlyprintk=intelce as a specific case, where
+			 * we'd only enable the console on the decompressor stage and
+			 * the kernel would initialize the console using the mmio (otherwise
+			 * the IOAPIC would hang, per Intel's comments). assumes 115200 bps,
+			 * using the weird BASE_BAUD that the SoC has.
+			 */
+			early_serial_init(DEFAULT_SERIAL_PORT, 14400);
+			return;
+		} else if (!strncmp(arg, "serial", 6)) {
 			port = DEFAULT_SERIAL_PORT;
 			pos += 6;
 		}
